@@ -266,12 +266,8 @@ BoxMatrix : SCViewHolder {
     }
     
 	addStyle { arg box,styleName;
-		var boxStyles;
-		boxStyles = box.styles ? [];
-		if(boxStyles.includes(styleName).not,{
-			boxStyles = boxStyles.add(styleName)
-		});
-		box.styles = boxStyles
+		box.styles = box.styles ?? {Set.new};
+		box.styles.add(styleName);
 	}
 	removeStyle { arg box,styleName;
 		(box.styles ?? {^nil}).remove(styleName);
