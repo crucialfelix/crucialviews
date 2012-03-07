@@ -83,9 +83,22 @@ UserViewObjectsManager {
 		view.refresh;
 	}
 	value {
-		stack.do { arg uv;
-			uv.value
-		};
+		var sels;
+		if(selected.size > 0,{
+			GUI.pen.use {
+				GUI.pen.alpha = 0.5;
+				stack.do { arg uv;
+					if(uv.selected,{
+						sels = sels.add(uv)
+					},{
+						uv.value
+					})
+				};
+			};
+			sels.do(_.value);
+		},{
+			stack.do(_.value)
+		});
 		ghosts.do({arg g; g.value });
 		selectionRect.value;
 		copyIcon.value;
