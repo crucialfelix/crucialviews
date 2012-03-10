@@ -127,7 +127,8 @@ UserViewObjectsManager {
 			hit = uv.bounds.containsPoint(p);
 			if(hit,{
 				if(clickCount == 2,{
-					onDoubleClick.value(uv.obj, p );// maybe translate to relative to obj
+					// translate p to relative to obj
+					onDoubleClick.value(uv.obj, p - uv.bounds.origin, modifiers, buttonNumber );
 				},{
 					mouseDownWasAHit = true;
 					if(this.isSelected(uv.obj).not,{
