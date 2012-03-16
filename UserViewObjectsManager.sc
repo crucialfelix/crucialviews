@@ -116,7 +116,7 @@ UserViewObjectsManager {
 		p = x@y;
 		mouseDownPoint = nil;
 		mouseDownWasAHit = false;
-		[p,bounds].debug;
+		//[p,bounds].debug;
 		if(bounds.containsPoint(p).not,{
 			^false.debug("out of bounds")
 		});
