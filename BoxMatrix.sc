@@ -104,13 +104,13 @@ BoxMatrix : SCViewHolder {
 
         // keys
         view.keyDownAction_({ arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyDownAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyDownAction',[char,modifiers,unicode,keycode]).notNil
         });
         view.keyUpAction = { arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyUpAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyUpAction',[char,modifiers,unicode,keycode]).notNil
         };
         view.keyModifiersChangedAction = { arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyModifiersChangedAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyModifiersChangedAction',[char,modifiers,unicode,keycode]).notNil
         };
     }
 
