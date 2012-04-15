@@ -90,27 +90,40 @@ BoxMatrix : SCViewHolder {
             });
         };
 
-	   // dragging off the matrix
-        view.beginDragAction = { arg me;
-            this.handleByFocused('beginDragAction',[]) ?? {this.focusedBox}
+		// dragging on/off the matrix
+		// only Qt supplies x,y
+        view.beginDragAction = { arg me,x,y;
+			if(x.notNil,{
+				this.handleCoords(x,y,'beginDragAction')
+			},{
+            	this.handleByFocused('beginDragAction',[]) ?? {this.focusedBox}
+			})
         };
-        view.canReceiveDragHandler = { arg me;
-            this.handleByFocused('canReceiveDragHandler',[]) ? true
+        view.canReceiveDragHandler = { arg me,x,y;
+			if(x.notNil,{
+				this.handleCoords(x,y,'canReceiveDragHandler')
+			},{
+            	this.handleByFocused('canReceiveDragHandler',[]) ? true
+			})
         };
-        view.receiveDragHandler = { arg me;
-		   this.handleByFocused('receiveDragHandler',[])
+        view.receiveDragHandler = { arg me,x,y;
+			if(x.notNil,{
+				this.handleCoords(x,y,'receiveDragHandler')
+			},{
+		   		this.handleByFocused('receiveDragHandler',[])
+			})
         };
 
 
         // keys
         view.keyDownAction_({ arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyDownAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyDownAction',[char,modifiers,unicode,keycode]).notNil
         });
         view.keyUpAction = { arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyUpAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyUpAction',[char,modifiers,unicode,keycode]).notNil
         };
         view.keyModifiersChangedAction = { arg me,char,modifiers,unicode,keycode;
-            this.handleByFocused('keyModifiersChangedAction',[char,modifiers,unicode,keycode])
+            this.handleByFocused('keyModifiersChangedAction',[char,modifiers,unicode,keycode]).notNil
         };
     }
 
@@ -138,11 +151,11 @@ BoxMatrix : SCViewHolder {
 	// dragging on or off the matrix using command-drag
     // box
     beginDragAction_ { arg func;
-        this.setHandler('beginDragAction',func)
+        this.setHandler('beginDragAction',{arg box;func.value(box)})
     }
     // itemBeingDragged
     canReceiveDragHandler_ { arg func;
-        this.setHandler('canReceiveDragHandler',func)
+        this.setHandler('canReceiveDragHandler',{arg box;func.value(box,View.currentDrag)})
     }
     // focusedBoxPoint for now, should be the box at the drop point
     // but user view doesnt give x,y yet
@@ -282,7 +295,7 @@ BoxMatrix : SCViewHolder {
     }
     handle { arg boxPoint,selector,args,preFunc;
 	   var box,ret;
-	   box = this.at(boxPoint);
+		box = this.at(boxPoint);
         preFunc.valueArray([boxPoint] ++ args);
         ret = handlers.at(selector).valueArray([box] ++ args);
         this.view.refresh;
