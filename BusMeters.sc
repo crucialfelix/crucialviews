@@ -2,9 +2,9 @@
 
 BusMeters {
 
-	classvar serverMeterViews, 	updateFreq = 10, dBLow = -86.0;
+	classvar serverMeterViews, 	updateFreq = 2, dBLow = -86.0,dbHigh = 0.0;
 
-	var <server,<busses;
+	var <server,<>busses;
 	var responder, synth, <meters, <peaks,<peaksG;
 	var numRMSSamps, numRMSSampsRecip,sones;
 
@@ -36,21 +36,17 @@ BusMeters {
 			parent.comp({ arg v;
 				this.makePeak(i,v,Rect(0,0,meterWidth,GUI.skin.buttonHeight));
 				this.makeBusMeter(i,v,Rect(0,GUI.skin.buttonHeight,meterWidth,meterHeight))
-			},meterWidth@(meterHeight + GUI.skin.buttonHeight));
+			},
+			meterWidth@(meterHeight + GUI.skin.buttonHeight)
+			).background_(Color.white);
 		};
 		
 		parent.onClose = { this.stop };
 	}
 	makeBusMeter { arg bi,layout,bounds;
-		var bv,pk;
+		var bv,pk,so;
 		bounds = bounds ?? {Rect(0,0,30,180)};
-		bv = LevelIndicator( layout, bounds )
-					.warning_(-0.2.dbamp)
-					.critical_(-0.01.dbamp)
-					.style_(0)
-					.drawsPeak_(true)
-					.numTicks_(9)
-					.numMajorTicks_(4);
+		bv = LevelsView(layout,bounds);
 		meters.put(bi,bv);
 		^bv
 	}
@@ -99,12 +95,19 @@ BusMeters {
 				try {
 					if(meters[0].isClosed.not,{
 						meters.do { arg m,i;
-							m.value = (val.maxItem.max(0.0) * numRMSSampsRecip).sqrt.ampdb.linlin(dBLow, 0, 0, 1);
 							var val,peak,sones,fi;
 							fi = i * 5;
 							val = msg[ [3,4] + fi ];
 							peak = msg[ [5,6] + fi ];
 							sones = msg[ 7 + fi ];
+
+							peak = peak.ampdb;
+							m.setValues(
+								peak,
+								(val.max(dbHigh) * numRMSSampsRecip).sqrt.ampdb,
+								sones,
+								peak = peak.maxItem
+							);
 							peaks.put(i, max(peaks.at(i),peak) );
 							if(peaksG.at(i).notNil,{
 								peaksG.at(i).label_(peaks.at(i).round(0.1).asString).refresh;
@@ -124,4 +127,82 @@ BusMeters {
 	}
 	remove { this.stop }
 }
+
+
+LevelsView {
+
+	var <>dbLow = -86.0, <>dbHigh = 0.0, <>bounds;
+	var pcl;
+	var view;
+	var al, ar, pl, pr, srect, peaki, avgi;
+
+	*new { arg parent,bounds;
+		^super.new.init(parent,bounds)
+	}
+
+	init { arg layout,b;
+		var font, halfwidth;
+
+		layout = layout ?? { FlowView.new };
+		bounds = b ?? { Rect(0,0,20,100) };
+		halfwidth = bounds.width / 2 - 1;
+		pcl = PenCommandList.new;		
+		view = UserView(layout,bounds);
+		view.drawFunc = {pcl.value};
+
+		bounds = view.bounds.moveTo(0,0);
+		font = Font.sansSerif(9);
+
+		// background
+		pcl.add( \fillColor_ , Color(0.86274509803922, 0.85882352941176, 0.84705882352941) );
+		pcl.add( \fillRect, bounds );
+
+		// averages
+		pcl.add( \fillColor_, Color(0.0, 0.86274509803922, 0.29019607843137) );
+		ar = Rect.fromPoints( 0@bounds.bottom,halfwidth@bounds.top);
+		pcl.add( \fillRect, ar );
+		al = Rect.fromPoints( (halfwidth + 1)@bounds.bottom,bounds.width@bounds.top);
+		pcl.add( \fillRect, al);
+
+		// peak
+		pcl.add( \fillColor_, Color.red );
+		pl = Rect( 0,bounds.bottom,halfwidth,1);
+		pcl.add( \fillRect, pl );
+		pr = Rect( halfwidth + 1,bounds.bottom,halfwidth,1);
+		pcl.add( \fillRect, pr );
+		peaki = pcl.add( \stringCenteredIn, "", Rect(0,bounds.top,bounds.width,20), font, Color.red  );
+		
+		// normalized sones
+		pcl.add( \fillColor_, Color.blue(alpha:0.5) );
+		srect = Rect(0,bounds.bottom,bounds.width,4);
+		pcl.add( \fillRect, srect );
+
+		// average number at half way
+		avgi = pcl.add( \stringCenteredIn, "", Rect(0,bounds.height / 2,bounds.width,20), font, Color.black  );
+
+		view.refresh;
+	}
+	setValues { arg peakLevels,avgs,sones,maxPeak;
+		
+		al.top = this.scaleLevel(avgs[0]);
+		ar.top = this.scaleLevel(avgs[1]);
+
+		pl.top = this.scaleLevel(peakLevels[0]);
+		pr.top = this.scaleLevel(peakLevels[1]);
+
+		srect.top = sones.linlin(0,60,bounds.bottom,bounds.top);
+
+		pcl.list.at(peaki).put(1, maxPeak.round(0.1).asString );
+		pcl.list.at(avgi).put(1, avgs.maxItem.round.asString );
+		view.refresh;
+	}
+	scaleLevel { arg l;
+		^l.linlin(dbLow,dbHigh,bounds.bottom,bounds.top)
+	}
+	isClosed { ^view.isClosed }
+	draw {
+		pcl.value
+	}
+}
+
 
