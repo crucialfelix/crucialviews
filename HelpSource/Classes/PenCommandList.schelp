@@ -1,0 +1,51 @@
+CLASS:: PenCommandList
+summary:: Optimization technique for use with UserViews
+categories:: GUI
+related:: Classes/UserView, Classes/Pen, Classes/QPen
+
+DESCRIPTION::
+This object can be used as the drawFunc for a UserView.  Commands can be added to it and each command will be performed with Pen, drawing the results onto the UserView.
+
+The advantage is that Rects can be pre-calculated and Colors can be created only once instead of every time the view refreshes.  Many draw functions have a lot of repetitive calculations that don't really need to be performed dynamically.
+
+Individual items in the PenCommandList may be altered, for instance moving a Rect by setting its .top or changing a color by inserting a new color in to the command list or inserting a new string.
+
+
+INSTANCEMETHODS::
+
+METHOD:: list
+Access the command list
+
+returns:: Array
+
+METHOD:: add
+Add a new command to the list.
+
+argument:: selector
+The Pen method name as a symbol, eg. \fillColor_ or \stringCenteredIn
+
+argument::  ... args
+The arguments to the Pen command
+
+returns:: the integer index of the item just added. This can be used to access and dynamically alter the command.
+
+METHOD:: clear
+Clear the command list.
+
+METHOD:: value
+Perform the commands with the currently active UserView.  Should be called either in the drawFunc of the UserView or the PenCommandList can be used directly as the drawFunc for a UserView.
+
+
+
+EXAMPLES::
+
+code::
+var pcl,uv,w;
+pcl = PenCommandList.new;
+pcl.add( \fillColor_ , Color(0.86274509803922, 0.85882352941176, 0.84705882352941) );
+pcl.add( \stringCenteredIn, pi.round(0.01).asString, Rect(10,10,50,20), Font.monospace(9,true,true), Color.rand );
+
+w = Window.new.front;
+uv = UserView(w);
+uv.drawFunc = pcl;
+::
