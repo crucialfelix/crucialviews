@@ -6,7 +6,7 @@ BusMeters {
 
 	var <server,<busses;
 	var responder, synth, <meters, <peaks,<peaksG;
-	var numRMSSamps, numRMSSampsRecip;
+	var numRMSSamps, numRMSSampsRecip,sones;
 
 	*new { |server,busses|
 		^super.new.init(server,busses)
@@ -16,6 +16,7 @@ BusMeters {
 		server = aserver ?? {Server.default};
 		busses = abusses ?? {[Bus(\audio,0,2,server)]};
 		meters = Array.newClear(busses.size);
+		sones = Array.newClear(busses.size);
 		peaks = Array.fill(busses.size,{dBLow});
 		peaksG = Array.newClear(busses.size);
 		numRMSSamps = (server.sampleRate ? server.options.sampleRate ? 44100.0) / updateFreq;
@@ -74,15 +75,20 @@ BusMeters {
 		var name;
 		name = "BusMeters".catList(busses.collect({ arg bus; bus.index }));
 		synth = SynthDef(name, {
-			var ins, imp,reset;
+			var ins, imp,reset,sones,fft,b;
 			ins = busses.collect({ arg b; In.ar(b.index,b.numChannels) });
 			imp = Impulse.ar(updateFreq);
 			reset = Delay1.ar(imp);
 			SendReply.ar(imp, "/" ++ name,
 				ins.collect({ arg in,i; 
+					var fft,sones,b;
+					b = LocalBuf(1024, 1);
+					fft = FFT(b,Normalizer.ar(Mono(in),0.5));
+					sones = Loudness.kr(fft);
 					[
 						RunningSum.ar(in.squared, numRMSSamps),
-						Peak.ar(in, reset).lag(0, 2)
+						Peak.ar(in, reset).lag(0, 2),
+						Peak.kr(sones,reset).lag(0,1)
 					]
 				}).flat
 			);
@@ -93,12 +99,12 @@ BusMeters {
 				try {
 					if(meters[0].isClosed.not,{
 						meters.do { arg m,i;
-							var val,peak;
-							val = msg[ [3,4] + (i*4) ];
-							peak = msg[ [5,6] + (i*4) ];
 							m.value = (val.maxItem.max(0.0) * numRMSSampsRecip).sqrt.ampdb.linlin(dBLow, 0, 0, 1);
-							peak = peak.maxItem.ampdb;
-							m.peakLevel = peak.linlin(dBLow, 0, 0, 1);
+							var val,peak,sones,fi;
+							fi = i * 5;
+							val = msg[ [3,4] + fi ];
+							peak = msg[ [5,6] + fi ];
+							sones = msg[ 7 + fi ];
 							peaks.put(i, max(peaks.at(i),peak) );
 							if(peaksG.at(i).notNil,{
 								peaksG.at(i).label_(peaks.at(i).round(0.1).asString).refresh;
