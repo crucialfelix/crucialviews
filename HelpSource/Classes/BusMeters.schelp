@@ -1,7 +1,7 @@
 CLASS:: BusMeters
 summary:: Creates meters for an array of busses for building mixer consoles
-categories:: Server, Views
-related:: Classes/Bus, Classes/LevelIndicator, Classes/ServerMeter
+categories:: Server, GUI>Views
+related:: Classes/Bus, Classes/LevelsView, Classes/ServerMeter, Classes/LevelIndicator
 
 DESCRIPTION::
 This creates a bank of meters for an array of busses.  Useful for building mixers or scattering bus meters throughout a GUI.  The meters can be next to each other in a row or can be placed individually. A single Synth is started to collect level readings and update the meters.
@@ -42,7 +42,7 @@ layout or parent view.  All meters do not have to be on the same layout.
 argument:: bounds
 size and location of meter.  When .gui is called the bounds are created and passed to here.
 
-returns:: a LevelIndicator
+returns:: a LevelsView
 
 METHOD:: makePeak
 Make a peak indicator. On the standard gui this is above the meter. Its a button that shows dB of highest peak received.  Clicking it reset it.
@@ -62,7 +62,7 @@ METHOD:: start
 starts the meters' synth and starts updating the views
 
 METHOD:: stop
-stops the meter's synth and stops updating the views. 
+stops the meter's synth and stops updating the views.
 
 METHOD:: remove
 When the window or parent view is closed then .remove is called (standard for all views). This will .stop the meter synth and stop further updates.
